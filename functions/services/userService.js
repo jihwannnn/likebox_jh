@@ -1,33 +1,31 @@
+// setting option 관련 db 관리
 const admin = require('firebase-admin');
 const db = admin.firestore();
 
-exports.verifyTokenAndGetUserData = async (token) => {
-  // ID 토큰 검증
-  const decodedToken = await admin.auth().verifyIdToken(token);
+// createUserDefault, db에 초기 세팅 생성. 토큰은 이 파일에서는 여기서만 다룸
+async function createDefaultUser(uid, isDarkMode, notificationEnabled, language, acessTokenMap, refreshTokenMap) {
 
-  // 사용자 정보 추출
-  const uid = decodedToken.uid;
-  const email = decodedToken.email;
-  const name = decodedToken.name || decodedToken.displayName;
+  // debugging log
+  console.log("service phase start");
 
-  if (!email || !name) {
-    throw new Error('토큰에서 필요한 사용자 정보를 추출할 수 없습니다.');
-  }
+  // db ref 가져오기
+  const userRef = db.collection("Users").doc(uid);
 
-  return { uid, email, name };
-};
-
-exports.saveUser = async (userData) => {
-  const { uid, email, name } = userData;
-
-  const userRef = db.collection('users').doc(uid);
-
-  // Firestore에 사용자 정보 저장
+  // 해당 ref에 저장
   await userRef.set(
     {
-      email: email,
-      name: name,
+      isDarkMode: isDarkMode,
+      notificationEnabled: notificationEnabled,
+      language: language,
+      acessTokenMap: acessTokenMap,
+      refreshTokenMap: refreshTokenMap
     },
-    { merge: true }
+    { merge: true } // 기존에 있다면 병합
   );
-};
+
+  // debugging log
+  console.log("service phase finish");
+}
+
+
+module.exports = { createDefaultUser };

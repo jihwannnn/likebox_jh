@@ -1,23 +1,35 @@
-const userService = require('../services/userService.js');
+// user 관련 프로세스 관리
 
-exports.registerUser = async (req, res) => {
+const userService = require('../services/userService');
+const functions = require('firebase-functions');
+
+// userCreationhandler, 사용자 생성시 초기 세팅 프로세스
+async function userCreationHandler(user) {
   try {
-    console.log("controller for register user")
-    const { token } = req.body;
 
-    if (!token) {
-      return res.status(400).send({ error: '토큰이 제공되지 않았습니다.' });
-    }
+    // debugging log
+    console.log("handler phase start");
+    console.log("New user registered:", user);
 
-    // 토큰 검증 및 사용자 정보 추출
-    const userData = await userService.verifyTokenAndGetUserData(token);
+    // 기본값 설정
+    const { uid } = user;
+    const isDarkMode = false;
+    const notificationEnabled = true;
+    const language = 'ko';
+    const acessTokenMap = {};
+    const refreshTokenMap = {};
 
-    // Firestore에 사용자 정보 저장
-    await userService.saveUser(userData);
+    // userService.js, db에 user default 저장
+    await userService.createDefaultUser(uid, isDarkMode, notificationEnabled, language, acessTokenMap, refreshTokenMap);
 
-    res.status(200).send({ message: '사용자 정보가 저장되었습니다.' });
+    // debugging log
+    console.log("Default user created successfully for UID:", uid);
+    console.log("handler phase finish");
+
   } catch (error) {
-    console.error('사용자 등록 오류:', error);
-    res.status(400).send({ error: '사용자 등록에 실패했습니다.' });
+    console.error("Error: Controller, generating default user,", error);
+    throw new functions.https.HttpsError("internal", "Failed to save user settings", { error: error.message });
   }
-};
+}
+
+module.exports = { userCreationHandler };
