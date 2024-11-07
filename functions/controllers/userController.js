@@ -1,35 +1,63 @@
 // user 관련 프로세스 관리
 
+const { onCall } = require('firebase-functions/v2/https');
+const { logger, https } = require('firebase-functions/v2');
 const userService = require('../services/userService');
-const functions = require('firebase-functions');
+const tokenService = require('../services/tokenService');
 
-// userCreationhandler, 사용자 생성시 초기 세팅 프로세스
-async function userCreationHandler(user) {
+
+// userCreationHandler, 사용자 생성 시 초기 세팅 프로세스
+const userCreationHandler = onCall(async (request) => {
   try {
 
+    if (!request.auth) {
+      // Throwing an HttpsError so that the client gets the error details.
+      throw new HttpsError("failed-precondition", "The function must be " +
+              "called while authenticated.");
+    }
+
     // debugging log
-    console.log("handler phase start");
-    console.log("New user registered:", user);
+    logger.info("handler phase start");
+
+    if(request) logger.info("request existed")
+      
+    // 매개변수 추출
+    const uid = request.data.uid;
 
     // 기본값 설정
-    const { uid } = user;
     const isDarkMode = false;
     const notificationEnabled = true;
     const language = 'ko';
-    const acessTokenMap = {};
+    const connectedPlatforms = [];
+    const accessTokenMap = {};
     const refreshTokenMap = {};
 
-    // userService.js, db에 user default 저장
-    await userService.createDefaultUser(uid, isDarkMode, notificationEnabled, language, acessTokenMap, refreshTokenMap);
+    // userService.js, DB에 사용자 기본 정보 저장
+    await userService.createDefaultUser(
+      uid,
+      isDarkMode,
+      notificationEnabled,
+      language,
+      connectedPlatforms,
+    );
+
+    await tokenService.createDefaultTokens(
+      uid,
+      accessTokenMap,
+      refreshTokenMap
+    )
 
     // debugging log
-    console.log("Default user created successfully for UID:", uid);
-    console.log("handler phase finish");
+    logger.info("Default user created successfully for UID:", { uid });
+    logger.info("handler phase finish");
 
+    return { message: "Default user created successfully" };
   } catch (error) {
-    console.error("Error: Controller, generating default user,", error);
-    throw new functions.https.HttpsError("internal", "Failed to save user settings", { error: error.message });
+    logger.error("Error: Controller, generating default user,", { error });
+    throw new https.HttpsError("internal", "Failed to save user settings", {
+      error: error.message,
+    });
   }
-}
+});
 
 module.exports = { userCreationHandler };

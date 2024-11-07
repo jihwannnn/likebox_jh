@@ -1,13 +1,10 @@
-const { onCall } = require('firebase-functions/v2/https');
 const admin = require('firebase-admin');
 
-if (!admin.apps.length) {
-    admin.initializeApp();
-}
+admin.initializeApp(); // Firebase Admin 초기화
 
-const userController = require('./controllers/userController');
 const tokenController = require('./controllers/tokenController');
+const userController = require('./controllers/userController');
 
-
-exports.userCreationHandler = onCall(userController.userCreationHandler);
-exports.tokenGeneratingHandler = onCall(tokenController.tokenGeneratingHandler); 
+exports.tokensGeneratingHandler = tokenController.tokensGeneratingHandler;
+exports.tokensVerifyingHandler = tokenController.tokensVerifyingHandler;
+exports.userCreationHandler = userController.userCreationHandler;
