@@ -1,14 +1,13 @@
-// spotify 관련 유틸
-
 const axios = require('axios');
 const querystring = require('querystring');
 const { logger } = require('firebase-functions/v2');
+const { defineString } = require('firebase-functions/params');
+const Tokens = require('../models/Tokens').default;
 
-const SPOTIFY_CLIENT_ID = "your_spotify_client_id";
-const SPOTIFY_CLIENT_SECRET = "your_spotify_client_secret";
-const REDIRECT_URI = "your_redirect_uri";
+const SPOTIFY_CLIENT_ID = defineString("A");
+const SPOTIFY_CLIENT_SECRET = defineString("B");
+const SERVER_REDIRECT_URI = defineString("C");
 
-// exchangeSpotifyCodeForeTokens, 코드를 스포티파이에 전달, 응답 데이터에서 토큰들을 반환함
 async function spotifyExchangeCodeForTokens(authCode) {
   try {
 
@@ -20,7 +19,7 @@ async function spotifyExchangeCodeForTokens(authCode) {
       querystring.stringify({
         grant_type: "authorization_code",
         code: authCode,
-        redirect_uri: REDIRECT_URI,
+        redirect_uri: SERVER_REDIRECT_URI,
         client_id: SPOTIFY_CLIENT_ID,
         client_secret: SPOTIFY_CLIENT_SECRET,
       }),
@@ -32,12 +31,9 @@ async function spotifyExchangeCodeForTokens(authCode) {
     );
 
     // debugging log
-    logger.info("service phase finish");
+    logger.info("util phase finish");
 
-    return {
-      accessToken: response.data.access_token,
-      refreshToken: response.data.refresh_token,
-    };
+    return new Tokens("spotify", response.data.access_token, response.data.refresh_token);
   } catch (error) {
     logger.error("Error: Util, exchanging Spotify code for tokens:", { error });
     throw new Error("Failed to exchange Spotify code for tokens.");
@@ -45,6 +41,8 @@ async function spotifyExchangeCodeForTokens(authCode) {
 }
 
 async function spotifyRefreshAccessToken(refreshToken) {
+
+  // debugging log
   logger.info("util phase start");
 
   try {
@@ -63,8 +61,8 @@ async function spotifyRefreshAccessToken(refreshToken) {
       }
     );
 
+    // debugging log
     logger.info("util phase finish");
-
     return response.data.access_token;
   } catch (error) {
     logger.error("Error: Util, refreshing Spotify access token:", { error });
