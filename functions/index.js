@@ -1,10 +1,12 @@
-const admin = require('firebase-admin');
+const admin = require("firebase-admin");
 
 admin.initializeApp(); // Firebase Admin 초기화
 
-const tokenController = require('./controllers/tokenController');
-const settingController = require('./controllers/settingController');
+const generalController = require("./controllers/generalController");
+const infoController = require("./controllers/infoController");
+const playlistController = require("./controllers/playlistController");
+const settingController = require("./controllers/settingController");
+const tokenController = require("./controllers/tokenController");
+const trackController = require("./controllers/trackController")
 
-exports.tokensGeneratingHandler = tokenController.tokensGeneratingHandler;
-exports.tokensVerifyingHandler = tokenController.tokensVerifyingHandler;
-exports.settingCreationHandler = settingController.settingCreationHandler;
+

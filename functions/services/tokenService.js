@@ -1,27 +1,48 @@
-const { logger } = require('firebase-functions/v2');
-const { getFirestore } = require('firebase-admin/firestore');
-const Tokens = require('../models/Tokens');
+const { logger } = require("firebase-functions/v2");
+const { getFirestore } = require("firebase-admin/firestore");
+const Token = require("../models/Token");
+const { refreshToken } = require("firebase-admin/app");
 const db = getFirestore();
 
-async function saveTokens(uid, tokens) {
+// db에 토큰 저장
+async function saveToken(token) {
+  try {
+    // debugging log
+    logger.info("service phase start");
 
-  // debugging log
-  logger.info("service phase start");
+    const tokenRef = db
+      .collection("Tokens")
+      .doc(token.uid)
+      .collection("User_tokens")
+      .doc(token.platform);
 
-  const tokenRef = db.collection("Tokens").doc(uid).collection("user_tokens").doc(tokens.source);
-  await tokenRef.set(tokens.toObject(), { merge: true });
+    await tokenRef.set(
+      {
+        accessToken: token.accessToken,
+        refreshToken: token.refreshToken
+      },
+      { merge: false }
+    );
 
-  // debugging log
-  logger.info("service phase finish");
+    // debugging log
+    logger.info("service phase finish");
+  } catch (error) {
+    logger.error("Error saving tokens:", error);
+    throw error;
+  }
 }
 
-async function getTokens(uid, source) {
-
+// db에서 토큰 가져오기
+async function getToken(uid, platform) {
   // debugging log
   logger.info("service phase start");
 
   try {
-    const tokenRef = db.collection("Tokens").doc(uid).collection("user_tokens").doc(source);
+    const tokenRef = db
+      .collection("Tokens")
+      .doc(uid)
+      .collection("User_tokens")
+      .doc(platform);
     const tokenDoc = await tokenRef.get();
 
     if (!tokenDoc.exists) {
@@ -29,15 +50,15 @@ async function getTokens(uid, source) {
     }
 
     const tokenData = tokenDoc.data();
-    const tokens = new Tokens(source, tokenData.accessToken, tokenData.refreshToken);
+    const token = new Token(uid, platform, tokenData.accessToken, tokenData.refreshToken);
 
     // debugging log
     logger.info("service phase finish");
-    return tokens;
+    return token;
   } catch (error) {
-    logger.error("Error: Service, retrieving tokens:", { error });
+    logger.error("Error: Service, retrieving tokens:", error);
     throw error;
   }
 }
 
-module.exports = { saveTokens, getTokens };
+module.exports = { saveToken, getToken };
